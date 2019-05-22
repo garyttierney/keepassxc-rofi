@@ -3,7 +3,12 @@
 # vi: set ft=sh :
 
 __error() {
-    echo "$1" >&2 
+    if [ -t 1 ]; then
+        echo "$1" >&2
+    else
+        zenity --error "$1"
+    fi
+
     exit 1
 }
 
