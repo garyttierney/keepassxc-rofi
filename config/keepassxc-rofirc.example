@@ -1,1 +1,5 @@
+# Path to the password database to show a listing of.
 PASSWORD_DATABASE="path/to/password/database.kdbx"
+
+# The length of time the password database key is cached in the kernels keyring, in seconds.
+PASSWORD_CACHE_TIMEOUT=10

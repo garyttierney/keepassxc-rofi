@@ -24,7 +24,7 @@ __keepassxc_cli_secure() {
         __error "__keepassxc_cli_secure: No keyctl arguments present"
     fi
 
-    keyctl pipe "$KEY_ID_ARG" | keepassxc-cli "$@"
+    keyctl pipe "$KEY_ID_ARG" | keepassxc-cli "$@" 2>&1
     unset -v KEY_ID_ARG
 }
 
@@ -35,13 +35,20 @@ if [ -z "$PASSWORD_DATABASE" ]; then
     __error "keepassxc-rofi: No password database configured"
 fi
 
+if [ -z "$PASSWORD_CACHE_TIMEOUT" ]; then
+    PASSWORD_CACHE_TIMEOUT=7200
+fi
+
 DATABASE_ID=$(printf "%s" "$PASSWORD_DATABASE" | sha256sum)
 KEY_DESC="keepassxc:$DATABASE_ID"
 KEY_ID=$(keyctl search @s user "$KEY_DESC" 2> /dev/null)
 
-if [ $? -eq 1 ]; then
+if [ $? -ne 0 ]; then
     KEY_ID=$(zenity --password --title="Unlock $PASSWORD_DATABASE" --timeout=10 | keyctl padd user "$KEY_DESC" @s)
-    unset -v PASSWORD
+
+    if ! keyctl timeout "$KEY_ID" "$PASSWORD_CACHE_TIMEOUT"; then
+        __error "keepassxc-rofi: Unable to cache password in keyring"
+    fi
 fi
 
 PASS_ID=$(__keepassxc_cli_secure "$KEY_ID" ls -q -R "$PASSWORD_DATABASE" \
