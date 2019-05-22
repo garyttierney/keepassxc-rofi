@@ -1,0 +1,77 @@
+#!/bin/sh
+# -*- mode: sh -*-
+# vi: set ft=sh :
+
+__error() {
+    echo "$1" >&2 
+    exit 1
+}
+
+__keepassxc_cli_secure() {
+    if [ -z "$1" ]; then
+        __error "__keepassxc_cli_secure: No key id present"
+    fi
+
+    KEY_ID_ARG="$1"
+    shift
+
+    if [ $# -eq 0 ]; then
+        __error "__keepassxc_cli_secure: No keyctl arguments present"
+    fi
+
+    keyctl pipe "$KEY_ID_ARG" | keepassxc-cli "$@"
+    unset -v KEY_ID_ARG
+}
+
+# shellcheck source=config/keepassxc-rofirc.example
+[ -f "$HOME/.keepassxc-rofirc" ] && . "$HOME/.keepassxc-rofirc"
+
+if [ -z "$PASSWORD_DATABASE" ]; then
+    __error "keepassxc-rofi: No password database configured"
+fi
+
+DATABASE_ID=$(printf "%s" "$PASSWORD_DATABASE" | sha256sum)
+KEY_DESC="keepassxc:$DATABASE_ID"
+KEY_ID=$(keyctl search @s user "$KEY_DESC" 2> /dev/null)
+
+if [ $? -eq 1 ]; then
+    KEY_ID=$(zenity --password --title="Unlock $PASSWORD_DATABASE" --timeout=10 | keyctl padd user "$KEY_DESC" @s)
+    unset -v PASSWORD
+fi
+
+PASS_ID=$(__keepassxc_cli_secure "$KEY_ID" ls -q -R "$PASSWORD_DATABASE" \
+    | awk '
+            BEGIN {
+                FS = "  "
+                GROUP_STACK[0] = ""
+                GROUP_STACK_POS = 0
+                LAST_GROUP_DEPTH = -1
+            }
+
+            {
+                GROUP_DEPTH = NF - 1;
+                TRAILING = substr($0, length($0));
+
+                if (TRAILING == "/" && GROUP_DEPTH > LAST_GROUP_DEPTH) {
+                    GROUP_STACK_POS++;
+                } else if (GROUP_DEPTH < LAST_GROUP_DEPTH) {
+                    GROUP_STACK_POS = GROUP_STACK_POS - LAST_GROUP_DEPTH - GROUP_DEPTH + 1;
+                }
+
+                # print "DEPTH " GROUP_DEPTH " LAST_DEPTH " LAST_GROUP_DEPTH " GROUP_STACK_POS " GROUP_STACK_POS  " " $NF
+
+                if (TRAILING == "/") {
+                    GROUP_STACK[GROUP_STACK_POS] = sprintf("%s%s", GROUP_STACK[GROUP_STACK_POS - 1], $NF);
+                } else if ($NF != "[empty]") {
+                    PREFIX = GROUP_STACK[GROUP_STACK_POS];
+                    print PREFIX $NF;
+                }
+
+                LAST_GROUP_DEPTH = GROUP_DEPTH;
+            }
+          ' \
+    | rofi -dmenu -i -20 -p "Select a password entry")
+
+if [ -n "$PASS_ID" ]; then
+    __keepassxc_cli_secure "$KEY_ID" clip -q "$PASSWORD_DATABASE" "$PASS_ID"
+fi

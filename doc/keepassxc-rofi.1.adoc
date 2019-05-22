@@ -1,0 +1,39 @@
+= keepassxc-rofi(1)
+Gary Tierney
+v0.1
+:doctype: manpage
+:manmanual: KEEPASSXC-ROFI
+:mansource: KEEPASSXC-ROFI
+:man-linkstyle: pass:[blue R < >]
+
+== Name
+
+keepassxc-rofi - show a graphical prompt with a listing of KeePassXC entries to be copied to the clipboard.
+
+== Synopsis
+
+*keepassxc-rofi* [_OPTION_]...
+
+== Environment Variables
+
+*PASSWORD_DATABASE*::
+  Path to a KeePassXC password database.
+
+== Exit status
+
+*0*::
+  Success.
+  Password was copied to the clipboard.
+
+*1*::
+  Failure.
+  Could not open *PASSWORD_DATABASE* with the password entered.
+
+== Resources
+
+*Project web site:* https://github.com/garyttierney/keepassxc-rofi
+
+== Copying
+
+Copyright (C) 2019 {author}. +
+Free use of this software is granted under the terms of the ISC License.
