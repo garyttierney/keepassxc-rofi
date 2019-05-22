@@ -86,4 +86,10 @@ PASS_ID=$(__keepassxc_cli_secure "$KEY_ID" ls -q -R "$PASSWORD_DATABASE" \
 
 if [ -n "$PASS_ID" ]; then
     __keepassxc_cli_secure "$KEY_ID" clip -q "$PASSWORD_DATABASE" "$PASS_ID"
+    notify-send "Copied password to clipboard" "$PASS_ID is available on the clipboard for 10 seconds"
+    sleep 10
+
+    if  __keepassxc_cli_secure "$KEY_ID" clip -q -t "$PASSWORD_DATABASE" "$PASS_ID"; then
+        notify-send "Copied OTP to clipboard" "OTP code for $PASS_ID is available on the clipboard for 10 seconds"
+    fi
 fi
