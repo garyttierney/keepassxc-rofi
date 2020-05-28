@@ -44,7 +44,7 @@ KEY_DESC="keepassxc:$DATABASE_ID"
 KEY_ID=$(keyctl search @s user "$KEY_DESC" 2> /dev/null)
 
 if [ $? -ne 0 ]; then
-    KEY_ID=$(zenity --password --title="Unlock $PASSWORD_DATABASE" --timeout=10 | keyctl padd user "$KEY_DESC" @s)
+    KEY_ID=$(rofi -dmenu -i -p "Enter your database password" -l 0 -password -width 500 | keyctl padd user "$KEY_DESC" @s)
 
     if ! keyctl timeout "$KEY_ID" "$PASSWORD_CACHE_TIMEOUT"; then
         __error "keepassxc-rofi: Unable to cache password in keyring"
